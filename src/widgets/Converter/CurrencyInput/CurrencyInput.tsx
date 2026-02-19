@@ -92,10 +92,12 @@ export default function CurrencyInput({
 
   const percent = useMemo(() => {
     if (maxD.eq(minD)) return 0;
+
     const parsed = parseDecimalInput(raw, false);
     const current = parsed
       ? Decimal.min(Decimal.max(parsed, minD), maxD)
       : minD;
+
     return current.minus(minD).div(maxD.minus(minD)).mul(100).toNumber();
   }, [raw, minD, maxD]);
 
