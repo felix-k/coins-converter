@@ -1,6 +1,6 @@
-import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useEffect, useMemo, useRef, useState } from "react";
 import { Divider, InputBase, Stack, Typography, useTheme } from "@mui/material";
-import { useDebounceCallback } from "usehooks-ts";
+import { useDebounceCallback, useEventCallback } from "usehooks-ts";
 import Decimal from "decimal.js";
 
 import {
@@ -43,46 +43,34 @@ const CurrencyInput = memo(
 
     const [raw, setRaw] = useState(() => formatForDisplay(valueD, precision));
     const inputRef = useRef<HTMLInputElement>(null);
-    const timerRef = useRef<number>(0);
-    const onChangeRef = useRef(onChange);
 
-    const normalizeRaw = useCallback(
-      (rawValue: string): Decimal =>
-        normalizeValue(parseDecimalInput(rawValue, false), minD, maxD, stepD),
-      [minD, maxD, stepD],
-    );
-
-    useEffect(() => {
-      onChangeRef.current = onChange;
-    }, [onChange]);
-
-    useEffect(() => () => window.clearTimeout(timerRef.current), []);
+    const normalizeRaw = (rawValue: string): Decimal =>
+      normalizeValue(parseDecimalInput(rawValue, false), minD, maxD, stepD);
 
     useEffect(() => {
       const formatted = formatForDisplay(valueD, precision);
       setRaw((prev) => (prev === formatted ? prev : formatted));
     }, [valueD, precision]);
 
-    const commitValue = useCallback(
-      (rawValue: string) => {
-        const normalized = normalizeRaw(rawValue);
-        const formatted = formatForDisplay(normalized, precision);
+    const commitValue = useEventCallback((rawValue: string) => {
+      const normalized = normalizeRaw(rawValue);
+      const formatted = formatForDisplay(normalized, precision);
 
-        if (formatted !== rawValue) {
-          const caret = inputRef.current?.selectionStart ?? null;
-          setRaw(formatted);
+      if (formatted !== rawValue) {
+        const caret = inputRef.current?.selectionStart ?? null;
+        setRaw(formatted);
 
-          requestAnimationFrame(() => {
-            if (caret !== null && inputRef.current) {
-              inputRef.current.setSelectionRange(caret, caret);
-            }
-          });
-        }
+        requestAnimationFrame(() => {
+          if (caret !== null && inputRef.current) {
+            inputRef.current.setSelectionRange(caret, caret);
+          }
+        });
+      }
 
-        onChangeRef.current?.(normalized);
-      },
-      [normalizeRaw, precision],
-    );
+      onChange?.(normalized);
+    });
+
+    const debouncedCommitValue = useDebounceCallback(commitValue, duration);
 
     const percent = useMemo(() => {
       if (maxD.eq(minD)) return 0;
@@ -100,20 +88,21 @@ const CurrencyInput = memo(
       if (!/^[0-9.]*$/.test(next)) return;
 
       setRaw(next);
-      window.clearTimeout(timerRef.current);
-      timerRef.current = window.setTimeout(() => commitValue(next), duration);
+      debouncedCommitValue(next);
     };
 
-    const handleClickProgress = useDebounceCallback((percent: number) => {
-      window.clearTimeout(timerRef.current);
+    const clickProgress = useEventCallback((percent: number) => {
+      debouncedCommitValue.cancel();
 
       const val = minD.plus(maxD.minus(minD).mul(percent).div(100));
       const normalized = normalizeRaw(formatForDisplay(val, precision));
       const formatted = formatForDisplay(normalized, precision);
 
       setRaw(formatted);
-      onChangeRef.current?.(normalized);
-    }, duration);
+      onChange?.(normalized);
+    });
+
+    const handleClickProgress = useDebounceCallback(clickProgress, duration);
 
     return (
       <Stack maxWidth={{ notebook: 450, desktop: "none" }} width={1}>
