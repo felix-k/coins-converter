@@ -10,15 +10,17 @@ const Converter = () => {
   const [rubAmount, setRubAmount] = useState(() => new Decimal(10000));
   const [rubMinAmount] = useState(() => new Decimal(10000));
   const [rubMaxAmount] = useState(() => new Decimal(70000000));
+  const [rubStep] = useState(() => new Decimal(100));
 
   const [usdtAmount, setUsdtAmount] = useState(() => new Decimal(0));
   const [usdtMinAmount, setUsdtMinAmount] = useState(() => new Decimal(0));
   const [usdtMaxAmount, setUsdtMaxAmount] = useState(() => new Decimal(0));
+  const [usdtStep] = useState(() => new Decimal(0.01));
 
   const getParams = (inAmount: Decimal | null, outAmount: Decimal | null) => ({
     pairId: 133,
-    inAmount: inAmount ? inAmount.toNumber() : null,
-    outAmount: outAmount ? outAmount.toNumber() : null,
+    inAmount: inAmount?.toNumber() ?? null,
+    outAmount: outAmount?.toNumber() ?? null,
   });
 
   const handleChangeRubAmount = useCallback(
@@ -79,17 +81,17 @@ const Converter = () => {
             ticker={TICKERS.RUB}
             min={rubMinAmount}
             max={rubMaxAmount}
-            step={new Decimal(100)}
+            step={rubStep}
             value={rubAmount}
-            onChange={(v) => handleChangeRubAmount(v)}
+            onChange={handleChangeRubAmount}
           />
           <CurrencyInput
             ticker={TICKERS.USDT}
             min={usdtMinAmount}
             max={usdtMaxAmount}
-            step={new Decimal(0.01)}
+            step={usdtStep}
             value={usdtAmount}
-            onChange={(v) => handleChangeUsdtAmount(v)}
+            onChange={handleChangeUsdtAmount}
           />
         </Stack>
       </Box>
