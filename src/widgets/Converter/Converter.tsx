@@ -39,6 +39,8 @@ const Converter = () => {
       const result = await calculatePair(getParams(null, v));
 
       const newInAmount = new Decimal(result.inAmount);
+      const newUsdtMinAmount = new Decimal(rubMinAmount.mul(result.price[0]));
+      const newUsdtMaxAmount = new Decimal(rubMaxAmount.mul(result.price[0]));
 
       if (newInAmount.lessThan(rubMinAmount)) {
         handleChangeRubAmount(rubMinAmount);
@@ -51,6 +53,8 @@ const Converter = () => {
       }
 
       setRubAmount(newInAmount);
+      setUsdtMinAmount(newUsdtMinAmount);
+      setUsdtMaxAmount(newUsdtMaxAmount);
     },
     [rubMinAmount, rubMaxAmount, handleChangeRubAmount],
   );
