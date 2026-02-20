@@ -1,73 +1,66 @@
-# React + TypeScript + Vite
+# Coins Converter
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Форма расчёта обмена валют (RUB ↔ USDT), построенная на React + TypeScript. Двусторонний пересчёт через единый API-эндпоинт.
 
-Currently, two official plugins are available:
+## Задача
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Реализовать форму из двух симметричных input-компонентов с прогрессбаром, выполняющую пересчёт в обе стороны через один POST-запрос к API. Проект решает следующие подзадачи:
 
-## React Compiler
+- **Респонсивная вёрстка** — колонка при 0–1000px, строка при 1000–1400px, с отступами от 1400px+
+- **Валидация ввода** — ограничения min/max/step, автокоррекция до ближайшего допустимого значения (Decimal-арифметика через `decimal.js`)
+- **Начальные условия** — левый input: min=10 000, max=70 000 000, step=100; правый: step=0.01, min/max/value вычисляются из `price` API
+- **Прогрессбар** — кнопки 25%/50%/75%/100%, шкала отображает точное положение value между min и max
+- **Rate limiting** — API блокирует при >1 req/s, реализован debounce
+- **Автотесты** — тесты на корректность ввода, нормализацию, работу прогрессбара
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Стек
 
-## Expanding the ESLint configuration
+| Категория        | Технологии               |
+| ---------------- | ------------------------ |
+| Фреймворк        | React 19, TypeScript 5.9 |
+| Сборка           | Vite 7                   |
+| UI               | Material-UI 7, Emotion   |
+| Числа            | decimal.js               |
+| Валидация        | Zod 4                    |
+| Тесты            | Vitest, Testing Library  |
+| Менеджер пакетов | pnpm                     |
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## Архитектура
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+Структура проекта следует принципам Feature-Sliced Design:
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```
+src/
+├── app/            # Провайдеры, тема, точка входа приложения
+├── shared/         # Переиспользуемые компоненты и утилиты
+│   ├── lib/        # ErrorBoundary
+│   └── ui/         # ThemeButton
+└── widgets/        # Самостоятельные блоки UI
+    ├── AppBar/
+    └── Converter/  # Основной виджет конвертера
+        └── CurrencyInput/  # Input-компонент с прогрессбаром
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## API
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```
+POST /b2api/change/user/pair/calc
+Header: serial = a7307e89-fbeb-4b28-a8ce-55b7fb3c32aa
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Request:  { pairId: 133, inAmount: number | null, outAmount: number | null }
+Response: { inAmount, outAmount, isStraight, price: [string, string] }
+```
+
+В dev-режиме Vite проксирует `/b2api` → `https://awx.pro`.
+
+## Запуск
+
+```bash
+pnpm install
+pnpm dev        # Dev-сервер
+pnpm test       # Тесты
+pnpm build      # Продакшен-сборка
+pnpm preview    # Превью сборки
+pnpm lint       # ESLint
+pnpm types      # Проверка типов
 ```
