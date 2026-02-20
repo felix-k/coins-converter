@@ -35,8 +35,8 @@ const CurrencyInput = memo(
       () =>
         Math.max(
           getStepPrecision(stepD),
-          getStepPrecision(minD),
-          getStepPrecision(maxD),
+          // getStepPrecision(minD),
+          // getStepPrecision(maxD),
         ),
       [stepD, minD, maxD],
     );
